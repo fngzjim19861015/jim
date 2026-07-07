@@ -1,22 +1,25 @@
-name: Install Xray
+name: Diag
 
 on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  check:
     runs-on: ubuntu-latest
     steps:
       - run: |
           sudo apt install -y -qq sshpass
           sshpass -p "${{ secrets.VPS_PASS }}" ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} '
-          hostname && cd /tmp
-          apt install -y -qq unzip
-          wget -qO xray.zip https://github.com/XTLS/Xray-core/releases/download/v26.3.27/Xray-linux-64.zip
-          unzip -oq xray.zip xray && chmod +x xray
-          cat > cfg.json << X
-          {"log":{"loglevel":"warning"},"inbounds":[{"listen":"0.0.0.0","port":443,"protocol":"vless","settings":{"clients":[{"id":"85925f10-6fc4-4baa-a28e-37ea53113f1b","flow":"xtls-rprx-vision"}],"decryption":"none"},"streamSettings":{"network":"tcp","security":"reality","realitySettings":{"dest":"www.microsoft.com:443","serverNames":["www.microsoft.com"],"privateKey":"iIqq9K77zHIyq-tnDeHQAW-NjOMkMgMQNPMSU4PLXWQ","shortIds":["a1b2c3d4"]}}}],"outbounds":[{"protocol":"freedom"}]}
-          X
-          pkill xray 2>/dev/null; nohup ./xray run -c cfg.json > /var/log/xray.log 2>&1 &
-          sleep 2; ps aux|grep "[x]ray" && echo OK || echo FAIL
+          echo "=== XRAY ==="
+          ps aux | grep "[x]ray" || echo "NOT RUNNING"
+          echo "=== PORT ==="
+          ss -tlnp | grep 443 || echo "NO 443"
+          echo "=== FW ==="
+          iptables -L INPUT -n 2>/dev/null || echo "no iptables"
+          echo "=== UFW ==="
+          ufw status 2>/dev/null || echo "no ufw"
+          echo "=== LOG ==="
+          tail -10 /tmp/x.log 2>/dev/null || echo "no log"
+          echo "=== CURL TEST ==="
+          curl -sk -o /dev/null -w "%{http_code}" --connect-timeout 3 https://127.0.0.1:443 2>/dev/null || echo "no response"
           '
