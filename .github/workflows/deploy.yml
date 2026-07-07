@@ -1,0 +1,21 @@
+name: Install Xray
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          sudo apt install -y -qq sshpass
+          sshpass -p "${{ secrets.VPS_PASS }}" ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} '
+          hostname && cd /tmp
+          wget -qO xray.zip https://github.com/XTLS/Xray-core/releases/download/v26.3.27/Xray-linux-64.zip
+          unzip -oq xray.zip xray && chmod +x xray
+          cat > cfg.json << X
+          {"log":{"loglevel":"warning"},"inbounds":[{"listen":"0.0.0.0","port":443,"protocol":"vless","settings":{"clients":[{"id":"85925f10-6fc4-4baa-a28e-37ea53113f1b","flow":"xtls-rprx-vision"}],"decryption":"none"},"streamSettings":{"network":"tcp","security":"reality","realitySettings":{"dest":"www.microsoft.com:443","serverNames":["www.microsoft.com"],"privateKey":"iIqq9K77zHIyq-tnDeHQAW-NjOMkMgMQNPMSU4PLXWQ","shortIds":["a1b2c3d4"]}}}],"outbounds":[{"protocol":"freedom"}]}
+          X
+          pkill xray 2>/dev/null; nohup ./xray run -c cfg.json > /tmp/x.log 2>&1 &
+          sleep 2; ps aux|grep "[x]ray" && echo OK
+          '
