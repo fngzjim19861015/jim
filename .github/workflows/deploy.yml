@@ -11,6 +11,7 @@ jobs:
           sudo apt install -y -qq sshpass
           sshpass -p "${{ secrets.VPS_PASS }}" ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} '
           hostname && cd /tmp
+          apt install -y -qq unzip
           wget -qO xray.zip https://github.com/XTLS/Xray-core/releases/download/v26.3.27/Xray-linux-64.zip
           unzip -oq xray.zip xray && chmod +x xray
           cat > cfg.json << X
